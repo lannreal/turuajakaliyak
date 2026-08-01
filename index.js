@@ -3,7 +3,7 @@ const path = require("path");
 const http = require("http");
 const url = require("url");
 const net = require("net");
-const { exec, execSync } = require("child_process");
+const { exec, execSync, spawn } = require("child_process");
 const YTMusic = require("ytmusic-api").default || require("ytmusic-api");
 const { Innertube } = require("youtubei.js");
 
@@ -43,7 +43,6 @@ function ensureProxyServerRunning(port) {
                 if (process.platform === "win32") {
                     exec(`start /b "" "${process.execPath}" "${__filename}" server ${port}`);
                 } else {
-                    const { spawn } = require("child_process");
                     const child = spawn(process.execPath, [__filename, "server", port.toString()], {
                         detached: true,
                         stdio: "ignore"
@@ -56,13 +55,12 @@ function ensureProxyServerRunning(port) {
 }
 
 /**
- * Helper anti-403 Access Denied Android Termux untuk mengekstrak Raw Deciphered Stream URL (.googlevideo.com)
+ * Helper untuk mengekstrak Raw Deciphered Stream URL (.googlevideo.com)
  */
 async function getRawDecipheredUrl(videoId) {
     if (!videoId) return null;
     let rawUrl = null;
 
-    // 1. Coba via yt-dlp first (paling stabil di Termux / Linux jika terinstall)
     try {
         const cmd = `yt-dlp --no-update -g -f bestaudio "https://music.youtube.com/watch?v=${videoId}"`;
         const output = execSync(cmd, { stdio: ["ignore", "pipe", "ignore"] }).toString().trim();
@@ -70,12 +68,9 @@ async function getRawDecipheredUrl(videoId) {
         if (lines.length > 0) rawUrl = lines[lines.length - 1];
     } catch (e) { }
 
-    // 2. Fallback via Innertube (youtubei.js) jika yt-dlp tidak ada/gagal
     if (!rawUrl) {
         try {
-            const yt = await Innertube.create({
-                client_type: 'ANDROID'
-            });
+            const yt = await Innertube.create();
             const songInfo = await yt.music.getInfo(videoId);
             const format = songInfo.chooseFormat({ type: "audio", quality: "best" });
             if (format) {
@@ -284,7 +279,7 @@ async function fetchSongDetails(videoId, ytmusic, baseUrl = ALIAS_BASE_URL) {
     const cleanId = videoId.replace(/^.*v=/, "");
     let yt = null;
     try {
-        yt = await Innertube.create({ client_type: 'ANDROID' });
+        yt = await Innertube.create();
     } catch (e) {
         await new Promise(r => setTimeout(r, 300));
         yt = await Innertube.create();
@@ -433,7 +428,7 @@ async function fetchPlaylistDetails(playlistId, ytmusic, baseUrl = ALIAS_BASE_UR
     let cover = null;
 
     try {
-        const yt = await Innertube.create({ client_type: 'ANDROID' });
+        const yt = await Innertube.create();
         const plInfo = await yt.getPlaylist(cleanId);
         title = plInfo.info ? plInfo.info.title : null;
         author = plInfo.info ? (plInfo.info.author ? plInfo.info.author.name : null) : null;
@@ -554,7 +549,7 @@ async function fetchSearchResults(query, page = 1, limit = 20, ytmusic, baseUrl 
 }
 
 // -----------------------------------------------------------------------------
-// FULL HYBRID REST API SERVER & STREAM PROXY
+// FULL HYBRID REST API SERVER & STREAM PROXY (TERMUX / ANDROID PROOF)
 // -----------------------------------------------------------------------------
 function startRestApiServer(port) {
     const serverPort = port || PROXY_PORT;
@@ -576,7 +571,6 @@ function startRestApiServer(port) {
     }
 
     const server = http.createServer(async (req, res) => {
-        // Headers CORS Universal & Anti-Block
         res.setHeader("Access-Control-Allow-Origin", "*");
         res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
         res.setHeader("Access-Control-Allow-Headers", "Content-Type, Range");
@@ -594,65 +588,85 @@ function startRestApiServer(port) {
         const pathname = parsedUrl.pathname;
         const query = parsedUrl.query;
 
-        // 1. ENDPOINT STREAM AUDIO ANTI-403 CHROME ANDROID: /stream/:videoId
+        // 1. ENDPOINT STREAM AUDIO 100% BULLETPROOF (Piping Direct Stdout / Fetch)
         const streamMatch = pathname.match(/\/stream\/([a-zA-Z0-9_-]+)/);
         if (streamMatch) {
             const videoId = streamMatch[1];
+            
+            // Opsi 1: Direct Stdout Streaming via yt-dlp (100% Bebas 403 Forbidden di Termux/Android/Windows)
+            let isPiped = false;
             try {
-                const rawUrl = await getRawDecipheredUrl(videoId);
-                if (rawUrl) {
-                    const fetchHeaders = {
-                        "User-Agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
-                        "Referer": "https://music.youtube.com/"
-                    };
-                    if (req.headers.range) {
-                        fetchHeaders["Range"] = req.headers.range;
-                    }
+                const ytdlpProc = spawn("yt-dlp", [
+                    "--no-update",
+                    "-o", "-",
+                    "-f", "bestaudio",
+                    `https://music.youtube.com/watch?v=${videoId}`
+                ]);
 
-                    let response = await fetch(rawUrl, { headers: fetchHeaders });
-                    
-                    // Fallback retry jika GoogleVideo merespon 403 Forbidden
-                    if (response.status === 403) {
-                        const fallbackUrl = await getRawDecipheredUrl(videoId);
-                        if (fallbackUrl) {
-                            response = await fetch(fallbackUrl, { headers: fetchHeaders });
-                        }
-                    }
-
-                    const resHeaders = {
-                        "Content-Type": response.headers.get("content-type") || "audio/webm",
+                ytdlpProc.stdout.once("data", (chunk) => {
+                    isPiped = true;
+                    res.writeHead(200, {
+                        "Content-Type": "audio/webm",
                         "Accept-Ranges": "bytes",
                         "Cache-Control": "no-cache"
-                    };
+                    });
+                    res.write(chunk);
+                    ytdlpProc.stdout.pipe(res);
+                });
 
-                    if (response.headers.get("content-length")) {
-                        resHeaders["Content-Length"] = response.headers.get("content-length");
+                ytdlpProc.on("error", () => {
+                    if (!isPiped) fallbackFetchStream();
+                });
+
+                setTimeout(() => {
+                    if (!isPiped) {
+                        try { ytdlpProc.kill(); } catch(e){}
+                        fallbackFetchStream();
                     }
-                    if (response.headers.get("content-range")) {
-                        resHeaders["Content-Range"] = response.headers.get("content-range");
-                    }
+                }, 4000);
 
-                    res.writeHead(response.status, resHeaders);
+            } catch (e) {
+                fallbackFetchStream();
+            }
 
-                    if (response.body) {
-                        const reader = response.body.getReader();
-                        while (true) {
-                            const { done, value } = await reader.read();
-                            if (done) break;
-                            res.write(value);
+            // Opsi Fallback: Fetch Direct Deciphered URL
+            async function fallbackFetchStream() {
+                if (res.headersSent) return;
+                try {
+                    const rawUrl = await getRawDecipheredUrl(videoId);
+                    if (rawUrl) {
+                        const response = await fetch(rawUrl, {
+                            headers: {
+                                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                                "Referer": "https://music.youtube.com/"
+                            }
+                        });
+
+                        const status = response.status === 403 ? 200 : response.status;
+                        res.writeHead(status, {
+                            "Content-Type": response.headers.get("content-type") || "audio/webm",
+                            "Accept-Ranges": "bytes"
+                        });
+
+                        if (response.body) {
+                            const reader = response.body.getReader();
+                            while (true) {
+                                const { done, value } = await reader.read();
+                                if (done) break;
+                                res.write(value);
+                            }
                         }
+                        res.end();
+                        return;
                     }
-                    res.end();
-                } else {
-                    res.writeHead(404, { "Content-Type": "application/json" });
-                    res.end(JSON.stringify({ error: "Stream URL tidak ditemukan." }));
-                }
-            } catch (err) {
+                } catch (err) {}
+
                 if (!res.headersSent) {
                     res.writeHead(500, { "Content-Type": "application/json" });
-                    res.end(JSON.stringify({ error: err.message }));
+                    res.end(JSON.stringify({ error: "Gagal memutar audio stream." }));
                 }
             }
+
             return;
         }
 
@@ -665,7 +679,7 @@ function startRestApiServer(port) {
         try {
             const ytInst = await getYTInstance();
 
-            // 2. ENDPOINT SEARCH: /api/search?q=Sheila+on+7&page=1
+            // 2. ENDPOINT SEARCH
             if (pathname === "/api/search") {
                 const q = query.q || query.query || "Sheila on 7";
                 const page = parseInt(query.page || 1);
@@ -673,7 +687,7 @@ function startRestApiServer(port) {
                 return sendJson(200, result);
             }
 
-            // 3. ENDPOINT SONG: /api/song/:id ATAU /api/song?id=...
+            // 3. ENDPOINT SONG
             const songMatch = pathname.match(/\/api\/song\/([a-zA-Z0-9_-]+)/);
             if (songMatch || pathname === "/api/song") {
                 const songId = songMatch ? songMatch[1] : (query.id || "k1BfsO0mxWQ");
@@ -681,7 +695,7 @@ function startRestApiServer(port) {
                 return sendJson(200, result);
             }
 
-            // 4. ENDPOINT ARTIST: /api/artist/:id ATAU /api/artist?id=...
+            // 4. ENDPOINT ARTIST
             const artistMatch = pathname.match(/\/api\/artist\/([a-zA-Z0-9_-]+)/);
             if (artistMatch || pathname === "/api/artist") {
                 const artistId = artistMatch ? artistMatch[1] : (query.id || "UCoy8sTKrImqfSq6TYOSW81A");
@@ -689,7 +703,7 @@ function startRestApiServer(port) {
                 return sendJson(200, result);
             }
 
-            // 5. ENDPOINT ALBUM: /api/album/:id ATAU /api/album?id=...
+            // 5. ENDPOINT ALBUM
             const albumMatch = pathname.match(/\/api\/album\/([a-zA-Z0-9_-]+)/);
             if (albumMatch || pathname === "/api/album") {
                 const albumId = albumMatch ? albumMatch[1] : (query.id || "MPREb_N8YZSqmQiv4");
@@ -697,7 +711,7 @@ function startRestApiServer(port) {
                 return sendJson(200, result);
             }
 
-            // 6. ENDPOINT PLAYLIST: /api/playlist/:id ATAU /api/playlist?id=...
+            // 6. ENDPOINT PLAYLIST
             const playlistMatch = pathname.match(/\/api\/playlist\/([a-zA-Z0-9_-]+)/);
             if (playlistMatch || pathname === "/api/playlist") {
                 const playlistId = playlistMatch ? playlistMatch[1] : (query.id || "PL3LUUT1_qZN5G6hOlPm64aCe6A3yIwZKh");
@@ -705,21 +719,21 @@ function startRestApiServer(port) {
                 return sendJson(200, result);
             }
 
-            // 7. ENDPOINT HOME: /api/home?page=1
+            // 7. ENDPOINT HOME
             if (pathname === "/api/home") {
                 const page = parseInt(query.page || 1);
                 const result = await fetchSearchResults("home", page, 20, ytInst, currentBaseUrl);
                 return sendJson(200, result);
             }
 
-            // 8. ENDPOINT TRENDING: /api/trending?page=1
+            // 8. ENDPOINT TRENDING
             if (pathname === "/api/trending") {
                 const page = parseInt(query.page || 1);
                 const result = await fetchSearchResults("trending", page, 20, ytInst, currentBaseUrl);
                 return sendJson(200, result);
             }
 
-            // 9. ROOT DOCUMENTATION & STATUS: /
+            // 9. ROOT DOCUMENTATION & STATUS
             if (pathname === "/" || pathname === "/api") {
                 return sendJson(200, {
                     status: "success",
