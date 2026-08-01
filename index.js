@@ -62,27 +62,27 @@ async function getRawDecipheredUrl(videoId) {
     let rawUrl = null;
 
     try {
-        const cmd = `yt-dlp --no-update -g -f bestaudio "https://music.youtube.com/watch?v=${videoId}"`;
-        const output = execSync(cmd, { stdio: ["ignore", "pipe", "ignore"] }).toString().trim();
-        const lines = output.split(/\r?\n/).filter(l => l.startsWith("http"));
-        if (lines.length > 0) rawUrl = lines[lines.length - 1];
+        const yt = await Innertube.create();
+        const songInfo = await yt.music.getInfo(videoId);
+        const format = songInfo.chooseFormat({ type: "audio", quality: "best" });
+        if (format) {
+            if (format.url) {
+                rawUrl = format.url;
+            } else if (typeof format.decipher === "function" && yt.session && yt.session.player) {
+                rawUrl = format.decipher(yt.session.player);
+            } else {
+                const cipherParams = new URLSearchParams(format.signature_cipher || format.cipher);
+                rawUrl = cipherParams.get("url") || null;
+            }
+        }
     } catch (e) { }
 
     if (!rawUrl) {
         try {
-            const yt = await Innertube.create();
-            const songInfo = await yt.music.getInfo(videoId);
-            const format = songInfo.chooseFormat({ type: "audio", quality: "best" });
-            if (format) {
-                if (format.url) {
-                    rawUrl = format.url;
-                } else if (typeof format.decipher === "function" && yt.session && yt.session.player) {
-                    rawUrl = format.decipher(yt.session.player);
-                } else {
-                    const cipherParams = new URLSearchParams(format.signature_cipher || format.cipher);
-                    rawUrl = cipherParams.get("url") || null;
-                }
-            }
+            const cmd = `yt-dlp --no-update -g -f bestaudio "https://music.youtube.com/watch?v=${videoId}"`;
+            const output = execSync(cmd, { stdio: ["ignore", "pipe", "ignore"] }).toString().trim();
+            const lines = output.split(/\r?\n/).filter(l => l.startsWith("http"));
+            if (lines.length > 0) rawUrl = lines[lines.length - 1];
         } catch (e) { }
     }
 
@@ -549,7 +549,7 @@ async function fetchSearchResults(query, page = 1, limit = 20, ytmusic, baseUrl 
 }
 
 // -----------------------------------------------------------------------------
-// FULL HYBRID REST API SERVER & STREAM PROXY (TERMUX / ANDROID PROOF)
+// FULL HYBRID REST API SERVER & STREAM PROXY (TERMUX & ANDROID ULTRA STABLE)
 // -----------------------------------------------------------------------------
 function startRestApiServer(port) {
     const serverPort = port || PROXY_PORT;
@@ -588,65 +588,40 @@ function startRestApiServer(port) {
         const pathname = parsedUrl.pathname;
         const query = parsedUrl.query;
 
-        // 1. ENDPOINT STREAM AUDIO 100% BULLETPROOF (Piping Direct Stdout / Fetch)
+        // 1. ENDPOINT STREAM AUDIO ULTRA STABLE: /stream/:videoId
         const streamMatch = pathname.match(/\/stream\/([a-zA-Z0-9_-]+)/);
         if (streamMatch) {
             const videoId = streamMatch[1];
             
-            // Opsi 1: Direct Stdout Streaming via yt-dlp (100% Bebas 403 Forbidden di Termux/Android/Windows)
-            let isPiped = false;
+            // Opsi 1: Direct Fetch dari Raw Deciphered Stream URL
             try {
-                const ytdlpProc = spawn("yt-dlp", [
-                    "--no-update",
-                    "-o", "-",
-                    "-f", "bestaudio",
-                    `https://music.youtube.com/watch?v=${videoId}`
-                ]);
-
-                ytdlpProc.stdout.once("data", (chunk) => {
-                    isPiped = true;
-                    res.writeHead(200, {
-                        "Content-Type": "audio/webm",
-                        "Accept-Ranges": "bytes",
-                        "Cache-Control": "no-cache"
-                    });
-                    res.write(chunk);
-                    ytdlpProc.stdout.pipe(res);
-                });
-
-                ytdlpProc.on("error", () => {
-                    if (!isPiped) fallbackFetchStream();
-                });
-
-                setTimeout(() => {
-                    if (!isPiped) {
-                        try { ytdlpProc.kill(); } catch(e){}
-                        fallbackFetchStream();
+                const rawUrl = await getRawDecipheredUrl(videoId);
+                if (rawUrl) {
+                    const fetchHeaders = {
+                        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                        "Referer": "https://music.youtube.com/"
+                    };
+                    if (req.headers.range) {
+                        fetchHeaders["Range"] = req.headers.range;
                     }
-                }, 4000);
 
-            } catch (e) {
-                fallbackFetchStream();
-            }
+                    const response = await fetch(rawUrl, { headers: fetchHeaders });
 
-            // Opsi Fallback: Fetch Direct Deciphered URL
-            async function fallbackFetchStream() {
-                if (res.headersSent) return;
-                try {
-                    const rawUrl = await getRawDecipheredUrl(videoId);
-                    if (rawUrl) {
-                        const response = await fetch(rawUrl, {
-                            headers: {
-                                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-                                "Referer": "https://music.youtube.com/"
-                            }
-                        });
-
-                        const status = response.status === 403 ? 200 : response.status;
-                        res.writeHead(status, {
+                    if (response.status === 200 || response.status === 206) {
+                        const resHeaders = {
                             "Content-Type": response.headers.get("content-type") || "audio/webm",
-                            "Accept-Ranges": "bytes"
-                        });
+                            "Accept-Ranges": "bytes",
+                            "Cache-Control": "no-cache"
+                        };
+
+                        if (response.headers.get("content-length")) {
+                            resHeaders["Content-Length"] = response.headers.get("content-length");
+                        }
+                        if (response.headers.get("content-range")) {
+                            resHeaders["Content-Range"] = response.headers.get("content-range");
+                        }
+
+                        res.writeHead(response.status, resHeaders);
 
                         if (response.body) {
                             const reader = response.body.getReader();
@@ -659,14 +634,49 @@ function startRestApiServer(port) {
                         res.end();
                         return;
                     }
-                } catch (err) {}
-
-                if (!res.headersSent) {
-                    res.writeHead(500, { "Content-Type": "application/json" });
-                    res.end(JSON.stringify({ error: "Gagal memutar audio stream." }));
                 }
-            }
+            } catch (err) {}
 
+            // Opsi 2: Fallback Stdout Streaming via yt-dlp jika direct fetch tidak merespon 200/206
+            try {
+                const ytdlpProc = spawn("yt-dlp", [
+                    "--no-update",
+                    "-o", "-",
+                    "-f", "bestaudio",
+                    `https://music.youtube.com/watch?v=${videoId}`
+                ]);
+
+                let isHeaderSent = false;
+                ytdlpProc.stdout.on("data", (chunk) => {
+                    if (!isHeaderSent) {
+                        isHeaderSent = true;
+                        res.writeHead(200, {
+                            "Content-Type": "audio/webm",
+                            "Accept-Ranges": "bytes",
+                            "Cache-Control": "no-cache"
+                        });
+                    }
+                    res.write(chunk);
+                });
+
+                ytdlpProc.stdout.on("end", () => {
+                    res.end();
+                });
+
+                ytdlpProc.on("error", () => {
+                    if (!res.headersSent) {
+                        res.writeHead(500, { "Content-Type": "application/json" });
+                        res.end(JSON.stringify({ error: "Gagal memutar audio stream." }));
+                    }
+                });
+
+                return;
+            } catch (e) { }
+
+            if (!res.headersSent) {
+                res.writeHead(500, { "Content-Type": "application/json" });
+                res.end(JSON.stringify({ error: "Gagal memutar audio stream." }));
+            }
             return;
         }
 
@@ -897,7 +907,7 @@ async function main() {
     } else {
         outputJson = {
             status: "error",
-            message: `Command '${command}' tidak dikenal. Ketik 'node index.js' untuk melihat panduan.`
+            message: `Command '${command}' tidak dikenal. Ketik 'node index.js' untuk me-load help.`
         };
     }
 
