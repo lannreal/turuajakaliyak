@@ -56,31 +56,36 @@ function ensureProxyServerRunning(port) {
 }
 
 /**
- * Helper untuk mengekstrak Raw Deciphered Stream URL (.googlevideo.com)
+ * Helper anti-403 Access Denied untuk mengekstrak Raw Deciphered Stream URL (.googlevideo.com)
  */
 async function getRawDecipheredUrl(videoId) {
     if (!videoId) return null;
     let rawUrl = null;
 
+    // 1. Coba dekripsi via Innertube (youtubei.js)
     try {
-        const cmd = `yt-dlp --no-update -g -f bestaudio "https://music.youtube.com/watch?v=${videoId}"`;
-        const output = execSync(cmd, { stdio: ["ignore", "pipe", "ignore"] }).toString().trim();
-        const lines = output.split(/\r?\n/).filter(l => l.startsWith("http"));
-        if (lines.length > 0) rawUrl = lines[lines.length - 1];
+        const yt = await Innertube.create();
+        const songInfo = await yt.music.getInfo(videoId);
+        const format = songInfo.chooseFormat({ type: "audio", quality: "best" });
+        if (format) {
+            if (format.url) {
+                rawUrl = format.url;
+            } else if (typeof format.decipher === "function" && yt.session && yt.session.player) {
+                rawUrl = format.decipher(yt.session.player);
+            } else {
+                const cipherParams = new URLSearchParams(format.signature_cipher || format.cipher);
+                rawUrl = cipherParams.get("url") || null;
+            }
+        }
     } catch (e) { }
 
+    // 2. Fallback via yt-dlp jika Innertube menemui kendala
     if (!rawUrl) {
         try {
-            const yt = await Innertube.create();
-            const songInfo = await yt.music.getInfo(videoId);
-            const format = songInfo.chooseFormat({ type: "audio", quality: "best" });
-            if (format) {
-                if (format.url) rawUrl = format.url;
-                else {
-                    const cipherParams = new URLSearchParams(format.signature_cipher || format.cipher);
-                    rawUrl = cipherParams.get("url") || null;
-                }
-            }
+            const cmd = `yt-dlp --no-update -g -f bestaudio "https://music.youtube.com/watch?v=${videoId}"`;
+            const output = execSync(cmd, { stdio: ["ignore", "pipe", "ignore"] }).toString().trim();
+            const lines = output.split(/\r?\n/).filter(l => l.startsWith("http"));
+            if (lines.length > 0) rawUrl = lines[lines.length - 1];
         } catch (e) { }
     }
 
@@ -271,7 +276,7 @@ function detectIdType(id) {
 }
 
 // -----------------------------------------------------------------------------
-// CORE BUSINESS LOGIC SERVICE (Dapat Dipakai Bersama oleh CLI & REST API)
+// CORE BUSINESS LOGIC SERVICE
 // -----------------------------------------------------------------------------
 async function fetchSongDetails(videoId, ytmusic) {
     const cleanId = videoId.replace(/^.*v=/, "");
@@ -569,10 +574,10 @@ function startRestApiServer(port) {
     }
 
     const server = http.createServer(async (req, res) => {
-        // Headers CORS Universal (Bisa dipanggil dari Web / Frontend mana saja)
+        // Headers CORS Universal & Anti-Block
         res.setHeader("Access-Control-Allow-Origin", "*");
         res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
-        res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+        res.setHeader("Access-Control-Allow-Headers", "Content-Type, Range");
 
         if (req.method === "OPTIONS") {
             res.writeHead(204);
@@ -584,7 +589,7 @@ function startRestApiServer(port) {
         const pathname = parsedUrl.pathname;
         const query = parsedUrl.query;
 
-        // 1. ENDPOINT STREAM AUDIO: /stream/:videoId
+        // 1. ENDPOINT STREAM AUDIO ANTI-403: /stream/:videoId
         const streamMatch = pathname.match(/\/stream\/([a-zA-Z0-9_-]+)/);
         if (streamMatch) {
             const videoId = streamMatch[1];
@@ -592,7 +597,8 @@ function startRestApiServer(port) {
                 const rawUrl = await getRawDecipheredUrl(videoId);
                 if (rawUrl) {
                     const fetchHeaders = {
-                        "User-Agent": req.headers["user-agent"] || "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+                        "User-Agent": req.headers["user-agent"] || "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                        "Referer": "https://music.youtube.com/"
                     };
                     if (req.headers.range) {
                         fetchHeaders["Range"] = req.headers.range;
@@ -728,17 +734,17 @@ function startRestApiServer(port) {
     });
 
     server.on("error", () => { });
-    server.listen(serverPort, "127.0.0.1", () => {
+    server.listen(serverPort, "0.0.0.0", () => {
         console.log(JSON.stringify({
             status: "running",
-            message: `Server REST API YouTube Music aktif pada http://127.0.0.1:${serverPort}`,
+            message: `Server REST API YouTube Music aktif pada http://0.0.0.0:${serverPort}`,
             port: serverPort
         }, null, 2));
     });
 }
 
 // -----------------------------------------------------------------------------
-// MAIN ENTRY POINT (2-IN-1 HYBRID CLI + REST API SERVER)
+// MAIN ENTRY POINT
 // -----------------------------------------------------------------------------
 async function main() {
     const rawArgs = process.argv.slice(2);
@@ -764,17 +770,14 @@ async function main() {
         ALIAS_BASE_URL = `http://127.0.0.1:${PROXY_PORT}`;
     }
 
-    // MODE 1: Jalankan Server REST API Interaktif jika dipanggil `node index.js server [port]`
     if (args[0] === "server" || args[0] === "api" || args[0] === "start") {
         const portToUse = args[1] && !isNaN(args[1]) ? parseInt(args[1]) : PROXY_PORT;
         startRestApiServer(portToUse);
         return;
     }
 
-    // Pastikan Server REST API berjalan di background untuk melayani stream proxy / CLI
     ensureProxyServerRunning(PROXY_PORT);
 
-    // MODE 2: Panduan CLI jika tanpa argumen
     if (args.length === 0 || args[0] === "--help" || args[0] === "-h" || args[0] === "help") {
         const helpJson = {
             status: "info",
@@ -783,7 +786,7 @@ async function main() {
             commands: [
                 {
                     command: "node index.js server [port]",
-                    description: "Jalankan Server REST API Interaktif (Akses via Browser / Postman)",
+                    description: "Jalankan Server REST API Interaktif",
                     example: "node index.js server 3000"
                 },
                 {
