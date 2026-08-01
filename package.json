@@ -1,0 +1,16 @@
+{
+  "name": "ytmusic-scraper",
+  "version": "1.0.0",
+  "description": "YouTube Music Scraper in JavaScript",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "deep": "node index.js --deep \"Sheila on 7 - Seberapa Pantas\""
+  },
+  "dependencies": {
+    "@distube/ytdl-core": "^4.16.12",
+    "play-dl": "^1.9.7",
+    "youtubei.js": "^17.2.0",
+    "ytmusic-api": "^5.0.0"
+  }
+}
