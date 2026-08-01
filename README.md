@@ -48,10 +48,10 @@
 
 ```bash
 # 1. Clone repository
-git clone https://github.com/username/ytmusic-scraper.git
+git clone https://github.com/lannreal/turuajakaliyak.git
 
 # 2. Masuk ke folder proyek
-cd ytmusic-scraper
+cd turuajakaliyak
 
 # 3. Install dependensi
 npm install
