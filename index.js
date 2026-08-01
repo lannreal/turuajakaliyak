@@ -8,7 +8,7 @@ const YTMusic = require("ytmusic-api").default || require("ytmusic-api");
 const { Innertube } = require("youtubei.js");
 
 let PROXY_PORT = 3000;
-let ALIAS_BASE_URL = `http://127.0.0.1:${PROXY_PORT}`;
+let ALIAS_BASE_URL = `http://localhost:${PROXY_PORT}`;
 
 /**
  * Cek apakah Port Proxy/Server sedang aktif
@@ -56,36 +56,38 @@ function ensureProxyServerRunning(port) {
 }
 
 /**
- * Helper anti-403 Access Denied untuk mengekstrak Raw Deciphered Stream URL (.googlevideo.com)
+ * Helper anti-403 Access Denied Android Termux untuk mengekstrak Raw Deciphered Stream URL (.googlevideo.com)
  */
 async function getRawDecipheredUrl(videoId) {
     if (!videoId) return null;
     let rawUrl = null;
 
-    // 1. Coba dekripsi via Innertube (youtubei.js)
+    // 1. Coba via yt-dlp first (paling stabil di Termux / Linux jika terinstall)
     try {
-        const yt = await Innertube.create();
-        const songInfo = await yt.music.getInfo(videoId);
-        const format = songInfo.chooseFormat({ type: "audio", quality: "best" });
-        if (format) {
-            if (format.url) {
-                rawUrl = format.url;
-            } else if (typeof format.decipher === "function" && yt.session && yt.session.player) {
-                rawUrl = format.decipher(yt.session.player);
-            } else {
-                const cipherParams = new URLSearchParams(format.signature_cipher || format.cipher);
-                rawUrl = cipherParams.get("url") || null;
-            }
-        }
+        const cmd = `yt-dlp --no-update -g -f bestaudio "https://music.youtube.com/watch?v=${videoId}"`;
+        const output = execSync(cmd, { stdio: ["ignore", "pipe", "ignore"] }).toString().trim();
+        const lines = output.split(/\r?\n/).filter(l => l.startsWith("http"));
+        if (lines.length > 0) rawUrl = lines[lines.length - 1];
     } catch (e) { }
 
-    // 2. Fallback via yt-dlp jika Innertube menemui kendala
+    // 2. Fallback via Innertube (youtubei.js) jika yt-dlp tidak ada/gagal
     if (!rawUrl) {
         try {
-            const cmd = `yt-dlp --no-update -g -f bestaudio "https://music.youtube.com/watch?v=${videoId}"`;
-            const output = execSync(cmd, { stdio: ["ignore", "pipe", "ignore"] }).toString().trim();
-            const lines = output.split(/\r?\n/).filter(l => l.startsWith("http"));
-            if (lines.length > 0) rawUrl = lines[lines.length - 1];
+            const yt = await Innertube.create({
+                client_type: 'ANDROID'
+            });
+            const songInfo = await yt.music.getInfo(videoId);
+            const format = songInfo.chooseFormat({ type: "audio", quality: "best" });
+            if (format) {
+                if (format.url) {
+                    rawUrl = format.url;
+                } else if (typeof format.decipher === "function" && yt.session && yt.session.player) {
+                    rawUrl = format.decipher(yt.session.player);
+                } else {
+                    const cipherParams = new URLSearchParams(format.signature_cipher || format.cipher);
+                    rawUrl = cipherParams.get("url") || null;
+                }
+            }
         } catch (e) { }
     }
 
@@ -199,9 +201,9 @@ function getBestCover(thumbnails) {
 }
 
 /**
- * Format Item Rapi & Logis
+ * Format Item Rapi & Logis dengan Dynamic Base URL (support Chrome Android localhost)
  */
-function formatItem(item) {
+function formatItem(item, baseUrl = ALIAS_BASE_URL) {
     const type = item.videoId ? "song" : (item.artistId ? "artist" : (item.albumId ? "album" : (item.playlistId ? "playlist" : "item")));
     const title = item.title || item.name || null;
     const id = item.videoId || item.artistId || item.albumId || item.playlistId || null;
@@ -252,7 +254,7 @@ function formatItem(item) {
 
     if (item.videoId) {
         obj.webUrl = `https://music.youtube.com/watch?v=${item.videoId}`;
-        obj.streamUrl = `${ALIAS_BASE_URL}/stream/${item.videoId}`;
+        obj.streamUrl = `${baseUrl}/stream/${item.videoId}`;
     } else if (item.artistId) {
         obj.webUrl = `https://music.youtube.com/channel/${item.artistId}`;
     } else if (item.albumId) {
@@ -278,11 +280,11 @@ function detectIdType(id) {
 // -----------------------------------------------------------------------------
 // CORE BUSINESS LOGIC SERVICE
 // -----------------------------------------------------------------------------
-async function fetchSongDetails(videoId, ytmusic) {
+async function fetchSongDetails(videoId, ytmusic, baseUrl = ALIAS_BASE_URL) {
     const cleanId = videoId.replace(/^.*v=/, "");
     let yt = null;
     try {
-        yt = await Innertube.create();
+        yt = await Innertube.create({ client_type: 'ANDROID' });
     } catch (e) {
         await new Promise(r => setTimeout(r, 300));
         yt = await Innertube.create();
@@ -314,11 +316,11 @@ async function fetchSongDetails(videoId, ytmusic) {
     if (basicInfo.title) {
         try {
             const searchRes = await ytmusic.search(`${basicInfo.author || ''} ${basicInfo.title || ''}`);
-            recommendations = searchRes.filter(i => i.videoId && i.videoId !== cleanId).slice(0, 5).map(i => formatItem(i));
+            recommendations = searchRes.filter(i => i.videoId && i.videoId !== cleanId).slice(0, 5).map(i => formatItem(i, baseUrl));
         } catch (e) {}
     }
 
-    const streamUrl = `${ALIAS_BASE_URL}/stream/${cleanId}`;
+    const streamUrl = `${baseUrl}/stream/${cleanId}`;
     const officialYtmLyrics = await getOfficialYTMusicLyrics(cleanId, ytmusic, yt);
     const syncedLyrics = await getSyncedLyrics(basicInfo.title, basicInfo.author);
 
@@ -360,7 +362,7 @@ async function fetchSongDetails(videoId, ytmusic) {
     };
 }
 
-async function fetchArtistDetails(artistId, ytmusic) {
+async function fetchArtistDetails(artistId, ytmusic, baseUrl = ALIAS_BASE_URL) {
     const cleanId = artistId.replace(/^.*channel\//, "");
     const artist = await ytmusic.getArtist(cleanId);
     return {
@@ -380,7 +382,7 @@ async function fetchArtistDetails(artistId, ytmusic) {
                 duration: s.duration || null,
                 coverArt: getBestCover(s.thumbnails),
                 webUrl: s.videoId ? `https://music.youtube.com/watch?v=${s.videoId}` : null,
-                streamUrl: s.videoId ? `${ALIAS_BASE_URL}/stream/${s.videoId}` : null
+                streamUrl: s.videoId ? `${baseUrl}/stream/${s.videoId}` : null
             })),
             albums: (artist.albums || []).slice(0, 5).map(a => ({
                 id: a.albumId || null,
@@ -393,7 +395,7 @@ async function fetchArtistDetails(artistId, ytmusic) {
     };
 }
 
-async function fetchAlbumDetails(albumId, ytmusic) {
+async function fetchAlbumDetails(albumId, ytmusic, baseUrl = ALIAS_BASE_URL) {
     const cleanId = albumId.replace(/^.*browse\//, "");
     const album = await ytmusic.getAlbum(cleanId);
     const tracks = (album.tracks || []).map((t, idx) => ({
@@ -403,7 +405,7 @@ async function fetchAlbumDetails(albumId, ytmusic) {
         artist: album.artist ? (album.artist.name || album.artist) : null,
         duration: t.duration || null,
         webUrl: t.videoId ? `https://music.youtube.com/watch?v=${t.videoId}` : null,
-        streamUrl: t.videoId ? `${ALIAS_BASE_URL}/stream/${t.videoId}` : null
+        streamUrl: t.videoId ? `${baseUrl}/stream/${t.videoId}` : null
     }));
 
     return {
@@ -423,7 +425,7 @@ async function fetchAlbumDetails(albumId, ytmusic) {
     };
 }
 
-async function fetchPlaylistDetails(playlistId, ytmusic) {
+async function fetchPlaylistDetails(playlistId, ytmusic, baseUrl = ALIAS_BASE_URL) {
     const cleanId = playlistId.replace(/^.*list=/, "");
     let tracks = [];
     let title = null;
@@ -431,7 +433,7 @@ async function fetchPlaylistDetails(playlistId, ytmusic) {
     let cover = null;
 
     try {
-        const yt = await Innertube.create();
+        const yt = await Innertube.create({ client_type: 'ANDROID' });
         const plInfo = await yt.getPlaylist(cleanId);
         title = plInfo.info ? plInfo.info.title : null;
         author = plInfo.info ? (plInfo.info.author ? plInfo.info.author.name : null) : null;
@@ -446,7 +448,7 @@ async function fetchPlaylistDetails(playlistId, ytmusic) {
                 duration: t.duration ? (typeof t.duration === 'object' ? t.duration.text : t.duration) : null,
                 coverArt: getBestCover(t.thumbnails),
                 webUrl: t.id ? `https://music.youtube.com/watch?v=${t.id}` : null,
-                streamUrl: t.id ? `${ALIAS_BASE_URL}/stream/${t.id}` : null
+                streamUrl: t.id ? `${baseUrl}/stream/${t.id}` : null
             }));
         }
     } catch (e) {
@@ -463,7 +465,7 @@ async function fetchPlaylistDetails(playlistId, ytmusic) {
                 duration: t.duration || null,
                 coverArt: getBestCover(t.thumbnails),
                 webUrl: t.videoId ? `https://music.youtube.com/watch?v=${t.videoId}` : null,
-                streamUrl: t.videoId ? `${ALIAS_BASE_URL}/stream/${t.videoId}` : null
+                streamUrl: t.videoId ? `${baseUrl}/stream/${t.videoId}` : null
             }));
         } catch (err) {}
     }
@@ -484,7 +486,7 @@ async function fetchPlaylistDetails(playlistId, ytmusic) {
     };
 }
 
-async function fetchSearchResults(query, page = 1, limit = 20, ytmusic) {
+async function fetchSearchResults(query, page = 1, limit = 20, ytmusic, baseUrl = ALIAS_BASE_URL) {
     if (query.toLowerCase() === "home") {
         const homeSections = await ytmusic.getHomeSections();
         let formattedSections = [];
@@ -494,7 +496,7 @@ async function fetchSearchResults(query, page = 1, limit = 20, ytmusic) {
             if (contents.length > 0) {
                 formattedSections.push({
                     sectionTitle: title,
-                    items: contents.map(item => formatItem(item))
+                    items: contents.map(item => formatItem(item, baseUrl))
                 });
             }
         });
@@ -515,7 +517,7 @@ async function fetchSearchResults(query, page = 1, limit = 20, ytmusic) {
         };
     } else if (query.toLowerCase() === "trending" || query.toLowerCase() === "charts") {
         const rawResults = await ytmusic.search("Top Songs Indonesia Charts");
-        const formattedResults = rawResults.map(item => formatItem(item));
+        const formattedResults = rawResults.map(item => formatItem(item, baseUrl));
 
         const totalItems = formattedResults.length;
         const totalPages = Math.ceil(totalItems / limit) || 1;
@@ -532,7 +534,7 @@ async function fetchSearchResults(query, page = 1, limit = 20, ytmusic) {
         };
     } else {
         const rawResults = await ytmusic.search(query);
-        const formattedResults = rawResults.map(item => formatItem(item));
+        const formattedResults = rawResults.map(item => formatItem(item, baseUrl));
 
         const totalItems = formattedResults.length;
         const totalPages = Math.ceil(totalItems / limit) || 1;
@@ -585,11 +587,14 @@ function startRestApiServer(port) {
             return;
         }
 
+        const host = req.headers.host || `localhost:${serverPort}`;
+        const currentBaseUrl = `http://${host}`;
+
         const parsedUrl = url.parse(req.url, true);
         const pathname = parsedUrl.pathname;
         const query = parsedUrl.query;
 
-        // 1. ENDPOINT STREAM AUDIO ANTI-403: /stream/:videoId
+        // 1. ENDPOINT STREAM AUDIO ANTI-403 CHROME ANDROID: /stream/:videoId
         const streamMatch = pathname.match(/\/stream\/([a-zA-Z0-9_-]+)/);
         if (streamMatch) {
             const videoId = streamMatch[1];
@@ -597,15 +602,23 @@ function startRestApiServer(port) {
                 const rawUrl = await getRawDecipheredUrl(videoId);
                 if (rawUrl) {
                     const fetchHeaders = {
-                        "User-Agent": req.headers["user-agent"] || "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                        "User-Agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
                         "Referer": "https://music.youtube.com/"
                     };
                     if (req.headers.range) {
                         fetchHeaders["Range"] = req.headers.range;
                     }
 
-                    const response = await fetch(rawUrl, { headers: fetchHeaders });
+                    let response = await fetch(rawUrl, { headers: fetchHeaders });
                     
+                    // Fallback retry jika GoogleVideo merespon 403 Forbidden
+                    if (response.status === 403) {
+                        const fallbackUrl = await getRawDecipheredUrl(videoId);
+                        if (fallbackUrl) {
+                            response = await fetch(fallbackUrl, { headers: fetchHeaders });
+                        }
+                    }
+
                     const resHeaders = {
                         "Content-Type": response.headers.get("content-type") || "audio/webm",
                         "Accept-Ranges": "bytes",
@@ -656,7 +669,7 @@ function startRestApiServer(port) {
             if (pathname === "/api/search") {
                 const q = query.q || query.query || "Sheila on 7";
                 const page = parseInt(query.page || 1);
-                const result = await fetchSearchResults(q, page, 20, ytInst);
+                const result = await fetchSearchResults(q, page, 20, ytInst, currentBaseUrl);
                 return sendJson(200, result);
             }
 
@@ -664,7 +677,7 @@ function startRestApiServer(port) {
             const songMatch = pathname.match(/\/api\/song\/([a-zA-Z0-9_-]+)/);
             if (songMatch || pathname === "/api/song") {
                 const songId = songMatch ? songMatch[1] : (query.id || "k1BfsO0mxWQ");
-                const result = await fetchSongDetails(songId, ytInst);
+                const result = await fetchSongDetails(songId, ytInst, currentBaseUrl);
                 return sendJson(200, result);
             }
 
@@ -672,7 +685,7 @@ function startRestApiServer(port) {
             const artistMatch = pathname.match(/\/api\/artist\/([a-zA-Z0-9_-]+)/);
             if (artistMatch || pathname === "/api/artist") {
                 const artistId = artistMatch ? artistMatch[1] : (query.id || "UCoy8sTKrImqfSq6TYOSW81A");
-                const result = await fetchArtistDetails(artistId, ytInst);
+                const result = await fetchArtistDetails(artistId, ytInst, currentBaseUrl);
                 return sendJson(200, result);
             }
 
@@ -680,7 +693,7 @@ function startRestApiServer(port) {
             const albumMatch = pathname.match(/\/api\/album\/([a-zA-Z0-9_-]+)/);
             if (albumMatch || pathname === "/api/album") {
                 const albumId = albumMatch ? albumMatch[1] : (query.id || "MPREb_N8YZSqmQiv4");
-                const result = await fetchAlbumDetails(albumId, ytInst);
+                const result = await fetchAlbumDetails(albumId, ytInst, currentBaseUrl);
                 return sendJson(200, result);
             }
 
@@ -688,21 +701,21 @@ function startRestApiServer(port) {
             const playlistMatch = pathname.match(/\/api\/playlist\/([a-zA-Z0-9_-]+)/);
             if (playlistMatch || pathname === "/api/playlist") {
                 const playlistId = playlistMatch ? playlistMatch[1] : (query.id || "PL3LUUT1_qZN5G6hOlPm64aCe6A3yIwZKh");
-                const result = await fetchPlaylistDetails(playlistId, ytInst);
+                const result = await fetchPlaylistDetails(playlistId, ytInst, currentBaseUrl);
                 return sendJson(200, result);
             }
 
             // 7. ENDPOINT HOME: /api/home?page=1
             if (pathname === "/api/home") {
                 const page = parseInt(query.page || 1);
-                const result = await fetchSearchResults("home", page, 20, ytInst);
+                const result = await fetchSearchResults("home", page, 20, ytInst, currentBaseUrl);
                 return sendJson(200, result);
             }
 
             // 8. ENDPOINT TRENDING: /api/trending?page=1
             if (pathname === "/api/trending") {
                 const page = parseInt(query.page || 1);
-                const result = await fetchSearchResults("trending", page, 20, ytInst);
+                const result = await fetchSearchResults("trending", page, 20, ytInst, currentBaseUrl);
                 return sendJson(200, result);
             }
 
@@ -737,7 +750,7 @@ function startRestApiServer(port) {
     server.listen(serverPort, "0.0.0.0", () => {
         console.log(JSON.stringify({
             status: "running",
-            message: `Server REST API YouTube Music aktif pada http://0.0.0.0:${serverPort}`,
+            message: `Server REST API YouTube Music aktif pada http://localhost:${serverPort}`,
             port: serverPort
         }, null, 2));
     });
@@ -767,7 +780,7 @@ async function main() {
 
     if (customPort) {
         PROXY_PORT = customPort;
-        ALIAS_BASE_URL = `http://127.0.0.1:${PROXY_PORT}`;
+        ALIAS_BASE_URL = `http://localhost:${PROXY_PORT}`;
     }
 
     if (args[0] === "server" || args[0] === "api" || args[0] === "start") {
