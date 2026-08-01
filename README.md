@@ -1,13 +1,13 @@
 <div align="center">
 
-  <!-- ANIMATED AUDIO WAVE VISUALIZER BANNER -->
-  <img src="https://user-images.githubusercontent.com/73097560/115834477-dbab4500-a447-11eb-8417-6447c20bc9d0.gif" width="100%" height="8px" alt="animated divider" />
+  <!-- ANIMATED AUDIO EQUALIZER SVG BAR -->
+  <img src="https://raw.githubusercontent.com/andrei-pavel/andrei-pavel/main/assets/welcomes.gif" width="100%" height="8px" alt="animated divider" />
   
   <br /><br />
 
   <!-- ANIMATED TYPING SVG BANNER -->
   <a href="https://git.io/typing-svg">
-    <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=700&size=28&pause=1000&color=FF0000&center=true&vCenter=true&random=false&width=750&height=50&lines=%F0%9F%8E%B5+YouTube+Music+Scraper+%26+REST+API;%F0%9F%8E%A7+Zero-Redirect+Direct+Audio+Proxy;%F0%9F%93%9C+Dual+Lyrics%3A+Official+%2B+Synced+Karaoke;%E2%9A%A1+2-in-1+Hybrid+Engine+(REST+API+%2B+CLI)" alt="Typing SVG" />
+    <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=700&size=26&pause=1000&color=E60000&center=true&vCenter=true&random=false&width=750&height=50&lines=%F0%9F%8E%B5+YouTube+Music+Scraper+%26+REST+API;%F0%9F%8E%A7+Zero-Redirect+Direct+Audio+Proxy;%F0%9F%93%9C+Dual+Lyrics%3A+Official+%2B+Synced+Karaoke;%E2%9A%A1+2-in-1+Hybrid+Engine+(REST+API+%2B+CLI)" alt="Typing SVG" />
   </a>
 
   <br />
@@ -25,17 +25,13 @@
     <b>Solusi Scraper & REST API Server Audio Streaming Modern, Cepat, dan Privat Berbasis Node.js</b>
   </p>
 
-  <img src="https://user-images.githubusercontent.com/73097560/115834477-dbab4500-a447-11eb-8417-6447c20bc9d0.gif" width="100%" height="8px" alt="animated divider" />
+  <img src="https://raw.githubusercontent.com/andrei-pavel/andrei-pavel/main/assets/welcomes.gif" width="100%" height="8px" alt="animated divider" />
 
 </div>
 
 <br />
 
-## 🌟 Highlighting Features
-
-<div align="center">
-  <img src="https://github.com/user-attachments/assets/5c0ee1fd-1647-4927-a068-07b9264c9bc0" width="400" alt="Audio Visualizer Animation" />
-</div>
+## 🌟 Fitur Utama
 
 | Fitur | Deskripsi |
 | :--- | :--- |
@@ -48,14 +44,14 @@
 
 ---
 
-## ⚡ Quick Start & Installation
+## ⚡ Quick Start & Instalasi
 
 ```bash
 # 1. Clone repository
-git clone https://github.com/lannreal/turuajakaliyak.git
+git clone https://github.com/username/ytmusic-scraper.git
 
 # 2. Masuk ke folder proyek
-cd turuajakaliyak
+cd ytmusic-scraper
 
 # 3. Install dependensi
 npm install
@@ -74,7 +70,7 @@ Jalankan server REST API dengan `node index.js server 3000`, lalu tembak endpoin
 GET http://127.0.0.1:3000/
 ```
 
-### 📋 List Endpoints
+### 📋 Daftar Endpoints
 
 | Method | Endpoint Path | Fungsi & Parameter |
 | :---: | :--- | :--- |
@@ -87,6 +83,306 @@ GET http://127.0.0.1:3000/
 | `GET` | `/api/home?page=1` | Beranda Rekomendasi YouTube Music |
 | `GET` | `/api/trending?page=1` | Top Charts Trending YouTube Music |
 | `GET` | `/stream/:videoId` | **Direct Audio Stream Proxy** (Audio Player Endpoint) |
+
+---
+
+## 📄 Contoh Respon JSON Seluruh Endpoints
+
+<details>
+<summary>🔍 <b>1. GET /api/search?q=Sheila+on+7&page=1 (Hasil Pencarian)</b></summary>
+
+<br />
+
+```json
+{
+  "status": "success",
+  "command": "search",
+  "query": "Sheila on 7",
+  "page": 1,
+  "totalPages": 2,
+  "totalResults": 21,
+  "data": [
+    {
+      "type": "song",
+      "id": "k1BfsO0mxWQ",
+      "title": "Dan...",
+      "artist": "Sheila On 7",
+      "duration": "4:49",
+      "coverArt": "https://yt3.googleusercontent.com/h52YQ8oAiGCiZFp5W1RGaj8GQMde1hNmYV7_ad3XgWcygvz7riguymmuvMj2yUoP1qhU2C3zoDJu72w=w120-h120-l90-rj",
+      "webUrl": "https://music.youtube.com/watch?v=k1BfsO0mxWQ",
+      "streamUrl": "http://127.0.0.1:3000/stream/k1BfsO0mxWQ"
+    },
+    {
+      "type": "album",
+      "id": "MPREb_Z5bsZC1RS6i",
+      "title": "Sheila On 7 Top Request",
+      "artist": "Sheila On 7",
+      "coverArt": "https://yt3.googleusercontent.com/8QpSnAk_R6sdSrMLgjzuEY2DD2e9V9SfiZ5erdHAqSnFA9bTIfXgz5PsWZldZ0CJbZQi9mpSI-ujt02e=w544-h544-l90-rj",
+      "webUrl": "https://music.youtube.com/browse/MPREb_Z5bsZC1RS6i"
+    },
+    {
+      "type": "artist",
+      "id": "UC1XMM7X-iGTqe5oN8R6lgoA",
+      "title": "Sheila on 7",
+      "coverArt": "https://yt3.googleusercontent.com/5LC4xqfoLIzzaXIPoE00zXG4B2_JjTI2j_57E-KMcAvFhAE2QspYRBtIRFRsMRA11Vs55b1jQ7k67eh3=w120-h120-l90-rj",
+      "webUrl": "https://music.youtube.com/channel/UC1XMM7X-iGTqe5oN8R6lgoA"
+    }
+  ]
+}
+```
+
+</details>
+
+<details>
+<summary>🔍 <b>2. GET /api/song/k1BfsO0mxWQ (Detail Lagu, Specs, Lirik Ganda, & Related)</b></summary>
+
+<br />
+
+```json
+{
+  "status": "success",
+  "command": "song",
+  "type": "song",
+  "data": {
+    "id": "k1BfsO0mxWQ",
+    "title": "Dan...",
+    "artist": "Sheila On 7",
+    "duration": "4:49",
+    "durationSeconds": 289,
+    "views": 55408789,
+    "coverArt": "https://yt3.googleusercontent.com/h52YQ8oAiGCiZFp5W1RGaj8GQMde1hNmYV7_ad3XgWcygvz7riguymmuvMj2yUoP1qhU2C3zoDJu72w=w544-h544-l90-rj",
+    "webUrl": "https://music.youtube.com/watch?v=k1BfsO0mxWQ",
+    "streamUrl": "http://127.0.0.1:3000/stream/k1BfsO0mxWQ",
+    "audioQuality": {
+      "container": "audio/mp4",
+      "codec": "mp4a.40.2",
+      "bitrate": "131 kbps",
+      "sampleRate": "44100 Hz"
+    },
+    "lyrics": {
+      "hasOfficial": true,
+      "hasSynced": true,
+      "official": {
+        "source": "Source: LyricFind",
+        "lines": [
+          "Dan bila esok datang kembali",
+          "Seperti sedia kala dimana kau bisa bercanda",
+          "Maafkan aku"
+        ]
+      },
+      "synced": [
+        {
+          "time": "00:19.04",
+          "seconds": 19.04,
+          "text": "Dan bila esok datang kembali"
+        },
+        {
+          "time": "00:26.79",
+          "seconds": 26.79,
+          "text": "Seperti sedia kala"
+        }
+      ]
+    },
+    "relatedSongs": [
+      {
+        "type": "song",
+        "id": "hv00T3jdIhc",
+        "title": "Kita",
+        "artist": "Sheila On 7",
+        "coverArt": "https://yt3.googleusercontent.com/YXzLBS3PLlIQy70cJtRZLjEQpdB-un0l72PfFg_HFftVaWGTsxDr5iTwCWayyHF_3R8GGLoi4ZadJiVOMg=w120-h120-l90-rj",
+        "webUrl": "https://music.youtube.com/watch?v=hv00T3jdIhc",
+        "streamUrl": "http://127.0.0.1:3000/stream/hv00T3jdIhc"
+      }
+    ]
+  }
+}
+```
+
+</details>
+
+<details>
+<summary>🔍 <b>3. GET /api/artist/UCoy8sTKrImqfSq6TYOSW81A (Profil Artis & Top Songs)</b></summary>
+
+<br />
+
+```json
+{
+  "status": "success",
+  "command": "artist",
+  "type": "artist",
+  "data": {
+    "id": "UCoy8sTKrImqfSq6TYOSW81A",
+    "name": "Sheila On 7",
+    "webUrl": "https://music.youtube.com/channel/UCoy8sTKrImqfSq6TYOSW81A",
+    "coverArt": "https://yt3.googleusercontent.com/5LC4xqfoLIzzaXIPoE00zXG4B2_JjTI2j_57E-KMcAvFhAE2QspYRBtIRFRsMRA11Vs55b1jQ7k67eh3=w544-h544-l90-rj",
+    "topSongs": [
+      {
+        "id": "k1BfsO0mxWQ",
+        "title": "Dan...",
+        "artist": "Sheila On 7",
+        "album": "Sheila On 7",
+        "duration": "4:49",
+        "coverArt": "https://yt3.googleusercontent.com/h52YQ8oAiGCiZFp5W1RGaj8GQMde1hNmYV7_ad3XgWcygvz7riguymmuvMj2yUoP1qhU2C3zoDJu72w=w120-h120-l90-rj",
+        "webUrl": "https://music.youtube.com/watch?v=k1BfsO0mxWQ",
+        "streamUrl": "http://127.0.0.1:3000/stream/k1BfsO0mxWQ"
+      }
+    ],
+    "albums": [
+      {
+        "id": "MPREb_N8YZSqmQiv4",
+        "title": "07 Des",
+        "year": "2002",
+        "coverArt": "https://yt3.googleusercontent.com/lPal6Q1Ddjr0g5xDu_6UXiutKEjwK3vcbOLa-UmhI85SsJhtNnqD3gwygs2EGsESjJbSjor8-6Mqy4iWXw=w544-h544-l90-rj",
+        "webUrl": "https://music.youtube.com/browse/MPREb_N8YZSqmQiv4"
+      }
+    ]
+  }
+}
+```
+
+</details>
+
+<details>
+<summary>🔍 <b>4. GET /api/album/MPREb_N8YZSqmQiv4 (Detail Album & Tracklist)</b></summary>
+
+<br />
+
+```json
+{
+  "status": "success",
+  "command": "album",
+  "type": "album",
+  "data": {
+    "id": "MPREb_N8YZSqmQiv4",
+    "title": "07 Des",
+    "artist": "Sheila On 7",
+    "year": "2002",
+    "totalTracks": 10,
+    "coverArt": "https://yt3.googleusercontent.com/lPal6Q1Ddjr0g5xDu_6UXiutKEjwK3vcbOLa-UmhI85SsJhtNnqD3gwygs2EGsESjJbSjor8-6Mqy4iWXw=w544-h544-l90-rj",
+    "webUrl": "https://music.youtube.com/browse/MPREb_N8YZSqmQiv4",
+    "tracks": [
+      {
+        "trackNumber": 1,
+        "id": "xKU58YkAcLw",
+        "title": "Hingga Ujung Waktu",
+        "artist": "Sheila On 7",
+        "duration": "4:27",
+        "webUrl": "https://music.youtube.com/watch?v=xKU58YkAcLw",
+        "streamUrl": "http://127.0.0.1:3000/stream/xKU58YkAcLw"
+      },
+      {
+        "trackNumber": 2,
+        "id": "nSPj50gQ_m4",
+        "title": "Seberapa Pantas",
+        "artist": "Sheila On 7",
+        "duration": "4:02",
+        "webUrl": "https://music.youtube.com/watch?v=nSPj50gQ_m4",
+        "streamUrl": "http://127.0.0.1:3000/stream/nSPj50gQ_m4"
+      }
+    ]
+  }
+}
+```
+
+</details>
+
+<details>
+<summary>🔍 <b>5. GET /api/playlist/PL3LUUT1_qZN5G6hOlPm64aCe6A3yIwZKh (Detail Playlist & Tracklist)</b></summary>
+
+<br />
+
+```json
+{
+  "status": "success",
+  "command": "playlist",
+  "type": "playlist",
+  "data": {
+    "id": "PL3LUUT1_qZN5G6hOlPm64aCe6A3yIwZKh",
+    "title": "kumpulan lagu-lagu Sheila On 7",
+    "author": "Dhimas Prathama",
+    "totalTracks": 30,
+    "coverArt": "https://yt3.ggpht.com/LZDNF3lvtJojy-s7DxUJAxIsc60AINg-ExCCe0SLgnyhBsMuIDQLVIBl3xic0a__n8kYrdLHVw=s1200",
+    "webUrl": "https://music.youtube.com/playlist?list=PL3LUUT1_qZN5G6hOlPm64aCe6A3yIwZKh",
+    "tracks": [
+      {
+        "trackNumber": 1,
+        "id": "k1BfsO0mxWQ",
+        "title": "Dan...",
+        "artist": "Sheila On 7",
+        "duration": "4:49",
+        "coverArt": "https://yt3.googleusercontent.com/h52YQ8oAiGCiZFp5W1RGaj8GQMde1hNmYV7_ad3XgWcygvz7riguymmuvMj2yUoP1qhU2C3zoDJu72w=w120-h120-l90-rj",
+        "webUrl": "https://music.youtube.com/watch?v=k1BfsO0mxWQ",
+        "streamUrl": "http://127.0.0.1:3000/stream/k1BfsO0mxWQ"
+      }
+    ]
+  }
+}
+```
+
+</details>
+
+<details>
+<summary>🔍 <b>6. GET /api/home?page=1 (Rekomendasi Beranda)</b></summary>
+
+<br />
+
+```json
+{
+  "status": "success",
+  "command": "search",
+  "mode": "home",
+  "page": 1,
+  "totalPages": 4,
+  "totalSections": 12,
+  "data": [
+    {
+      "sectionTitle": "Rekomendasi Musik",
+      "items": [
+        {
+          "type": "song",
+          "id": "k1BfsO0mxWQ",
+          "title": "Dan...",
+          "artist": "Sheila On 7",
+          "duration": "4:49",
+          "coverArt": "https://yt3.googleusercontent.com/...",
+          "webUrl": "https://music.youtube.com/watch?v=k1BfsO0mxWQ",
+          "streamUrl": "http://127.0.0.1:3000/stream/k1BfsO0mxWQ"
+        }
+      ]
+    }
+  ]
+}
+```
+
+</details>
+
+<details>
+<summary>🔍 <b>7. GET /api/trending?page=1 (Top Charts Trending)</b></summary>
+
+<br />
+
+```json
+{
+  "status": "success",
+  "command": "trending",
+  "page": 1,
+  "totalPages": 1,
+  "totalResults": 20,
+  "data": [
+    {
+      "type": "song",
+      "id": "0S0gYCRWeSI",
+      "title": "BEST OF SHEILA ON 7",
+      "artist": "SETH.",
+      "coverArt": "https://i.ytimg.com/vi/0S0gYCRWeSI/hqdefault.jpg",
+      "webUrl": "https://music.youtube.com/watch?v=0S0gYCRWeSI",
+      "streamUrl": "http://127.0.0.1:3000/stream/0S0gYCRWeSI"
+    }
+  ]
+}
+```
+
+</details>
 
 ---
 
@@ -131,69 +427,6 @@ node index.js trending
 
 ---
 
-## 📄 Sample JSON Payload (`GET /api/song/k1BfsO0mxWQ`)
-
-<details>
-<summary>🔍 <b>Klik untuk melihat Struktur JSON Lengkap</b></summary>
-
-<br />
-
-```json
-{
-  "status": "success",
-  "command": "song",
-  "type": "song",
-  "data": {
-    "id": "k1BfsO0mxWQ",
-    "title": "Dan...",
-    "artist": "Sheila On 7",
-    "duration": "4:49",
-    "durationSeconds": 289,
-    "views": 55408789,
-    "coverArt": "https://yt3.googleusercontent.com/...",
-    "webUrl": "https://music.youtube.com/watch?v=k1BfsO0mxWQ",
-    "streamUrl": "http://127.0.0.1:3000/stream/k1BfsO0mxWQ",
-    "audioQuality": {
-      "container": "audio/mp4",
-      "codec": "mp4a.40.2",
-      "bitrate": "131 kbps",
-      "sampleRate": "44100 Hz"
-    },
-    "lyrics": {
-      "hasOfficial": true,
-      "hasSynced": true,
-      "official": {
-        "source": "Source: LyricFind",
-        "lines": [
-          "Dan bila esok datang kembali",
-          "Maafkan aku"
-        ]
-      },
-      "synced": [
-        {
-          "time": "00:19.04",
-          "seconds": 19.04,
-          "text": "Dan bila esok datang kembali"
-        }
-      ]
-    },
-    "relatedSongs": [
-      {
-        "type": "song",
-        "id": "hv00T3jdIhc",
-        "title": "Kita",
-        "artist": "Sheila On 7",
-        "streamUrl": "http://127.0.0.1:3000/stream/hv00T3jdIhc"
-      }
-    ]
-  }
-}
-```
-
-</details>
-
----
-
 ## 🌐 Data Sources & Credits
 
 - 🎶 **Metadata, Search & Audio Stream**: [YouTube Music](https://music.youtube.com)
@@ -203,7 +436,7 @@ node index.js trending
 ---
 
 <div align="center">
-  <img src="https://user-images.githubusercontent.com/73097560/115834477-dbab4500-a447-11eb-8417-6447c20bc9d0.gif" width="100%" height="8px" alt="animated divider" />
+  <img src="https://raw.githubusercontent.com/andrei-pavel/andrei-pavel/main/assets/welcomes.gif" width="100%" height="8px" alt="animated divider" />
   <br />
   <sub>Built with ❤️ & Node.js — Distributed under the <b>MIT License</b></sub>
 </div>
