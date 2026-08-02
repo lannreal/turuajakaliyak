@@ -7,7 +7,7 @@
 
   <!-- ANIMATED TYPING SVG BANNER -->
   <a href="https://git.io/typing-svg">
-    <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=700&size=26&pause=1000&color=E60000&center=true&vCenter=true&random=false&width=750&height=50&lines=%F0%9F%8E%B5+YouTube+Music+Scraper+%26+REST+API;%F0%9F%8E%A7+Zero-Redirect+Direct+Audio+Proxy;%F0%9F%93%9C+Dual+Lyrics%3A+Official+%2B+Synced+Karaoke;%F0%9F%93%B1+Termux+(Android)+%2B+Windows+Supported;%E2%9A%A1+2-in-1+Hybrid+Engine+(REST+API+%2B+CLI)" alt="Typing SVG" />
+    <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=700&size=26&pause=1000&color=E60000&center=true&vCenter=true&random=false&width=750&height=50&lines=%F0%9F%8E%B5+YouTube+Music+Scraper+%26+REST+API;%F0%9F%8E%A7+Zero-Redirect+Direct+Audio+Proxy;%F0%9F%93%9C+Dual+Lyrics%3A+Official+%2B+Synced+Karaoke;%F0%9F%9A%80+VPS%2FCloud+Deployment+Ready+(PM2%2FNginx);%F0%9F%93%B1+Termux+(Android)+%2B+Windows+Supported;%E2%9A%A1+2-in-1+Hybrid+Engine+(REST+API+%2B+CLI)" alt="Typing SVG" />
   </a>
 
   <br />
@@ -17,12 +17,12 @@
     <a href="#"><img src="https://img.shields.io/badge/Node.js-v18%2B-green.svg?style=for-the-badge&logo=nodedotjs&logoColor=white" alt="NodeJS" /></a>
     <a href="#"><img src="https://img.shields.io/badge/Platform-YouTube%20Music-red.svg?style=for-the-badge&logo=youtubemusic&logoColor=white" alt="YouTube Music" /></a>
     <a href="#"><img src="https://img.shields.io/badge/Lyrics-LyricFind%20%7C%20LRCLIB-violet.svg?style=for-the-badge&logo=genius&logoColor=white" alt="Lyrics Engine" /></a>
-    <a href="#"><img src="https://img.shields.io/badge/OS-Termux%20%7C%20Windows%20%7C%20Linux-orange.svg?style=for-the-badge&logo=android&logoColor=white" alt="OS Support" /></a>
+    <a href="#"><img src="https://img.shields.io/badge/Deployment-VPS%20%7C%20Cloud%20%7C%20Termux-orange.svg?style=for-the-badge&logo=nginx&logoColor=white" alt="Deployment" /></a>
     <a href="#"><img src="https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge" alt="License" /></a>
   </p>
 
   <p align="center">
-    <b>Solusi Scraper & REST API Server Audio Streaming Modern, Cepat, dan Privat Berbasis Node.js — Kompatibel Penuh untuk Termux (Android) & PC</b>
+    <b>Solusi Scraper & REST API Server Audio Streaming Modern, Cepat, dan Privat Berbasis Node.js — Kompatibel Penuh untuk VPS, Server Cloud, Termux (Android), & PC</b>
   </p>
 
   <img src="https://raw.githubusercontent.com/andrei-pavel/andrei-pavel/main/assets/welcomes.gif" width="100%" height="8px" alt="animated divider" />
@@ -36,6 +36,7 @@
 | Fitur | Deskripsi |
 | :--- | :--- |
 | ⚡ **2-in-1 Hybrid Mode** | Berjalan fleksibel sebagai **REST API Web Server** (Port 3000) **DAN** sebagai **CLI Tool** langsung di terminal. |
+| 🚀 **VPS & Cloud Production Ready** | Siap dideploy 24/7 di VPS Linux (Ubuntu/Debian) menggunakan **PM2**, **Nginx Reverse Proxy**, & **SSL Certbot**. |
 | 📱 **Full Termux (Android) Support** | Kompatibel 100% di Termux Android (`0.0.0.0` binding) dengan sistem dekripsi audio otomatis. |
 | 🎧 **Zero-Redirect Proxy** | Server proxy stream lokal (`/stream/:videoId`) menyalurkan audio mentah tanpa redirect & **100% menyamarkan IP**. |
 | 📜 **Dual Lyrics Engine** | **Official YTM Lyrics** (*LyricFind / Musixmatch*) + **Synced Karaoke Lyrics** ber-timestamp milidetik (*LRCLIB*). |
@@ -45,7 +46,7 @@
 
 ---
 
-## ⚡ Quick Start & Instalasi
+## ⚡ Quick Start & Lokal Setup
 
 ### 💻 1. Instalasi di Windows / Linux / macOS:
 ```bash
@@ -79,6 +80,89 @@ npm install
 # 3. Jalankan Server REST API di Termux
 node index.js server 3000
 ```
+
+---
+
+## 🚀 VPS & Cloud Server Deployment Guide
+
+Ingin menjalankan REST API Server ini **24/7 di Cloud VPS** (Ubuntu/Debian) dengan domain kustom (`https://api.domain-anda.com`)? Ikuti langkah-langkah profesional berikut:
+
+<details>
+<summary>🌐 <b>Klik di sini untuk melihat Panduan Deploy VPS (Ubuntu/Debian + PM2 + Nginx)</b></summary>
+
+<br />
+
+### 1. Preparasi Sistem VPS (Ubuntu / Debian):
+```bash
+# Update sistem & install Node.js v18+, FFmpeg, Python & yt-dlp
+sudo apt update && sudo apt upgrade -y
+sudo apt install -y nodejs npm ffmpeg python3 python3-pip git
+sudo pip3 install yt-dlp --break-system-packages
+
+# Install Process Manager PM2 secara global
+sudo npm install -g pm2
+```
+
+### 2. Clone & Setup Project di VPS:
+```bash
+# Clone proyek & install dependensi
+git clone https://github.com/lannreal/turuajakaliyak.git
+cd turuajakaliyak
+npm install
+
+# Jalankan server API di latar belakang 24/7 menggunakan PM2
+pm2 start index.js --name "ytm-api" -- server 3000
+
+# Pengaturan auto-start saat VPS di-reboot
+pm2 startup
+pm2 save
+```
+
+### 3. Konfigurasi Nginx Reverse Proxy & SSL (Domain Kustom):
+
+Buka konfigurasi Nginx baru:
+```bash
+sudo nano /etc/nginx/sites-available/ytm-api
+```
+
+Tempelkan konfigurasi berikut (*ganti `api.domain-anda.com` dengan domain Anda*):
+```nginx
+server {
+    listen 80;
+    server_name api.domain-anda.com;
+
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+}
+```
+
+Aktifkan konfigurasi & dapatkan **Sertifikat SSL Gratis (HTTPS)**:
+```bash
+sudo ln -s /etc/nginx/sites-available/ytm-api /etc/nginx/sites-enabled/
+sudo nginx -t
+sudo systemctl restart nginx
+
+# Pasang SSL Gratis via Certbot
+sudo apt install -y certbot python3-certbot-nginx
+sudo certbot --nginx -d api.domain-anda.com
+```
+
+---
+
+### ☁️ 4. Deploy di Cloud PaaS (Render / Railway / Koyeb):
+- **Build Command**: `npm install`
+- **Start Command**: `node index.js server 3000`
+- **Environment Variable**: `PORT=3000`
+
+</details>
 
 ---
 
