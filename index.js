@@ -1,7 +1,6 @@
 const fs = require("fs");
 const path = require("path");
 const http = require("http");
-const url = require("url");
 const net = require("net");
 const { exec, execSync, spawn } = require("child_process");
 const YTMusic = require("ytmusic-api").default || require("ytmusic-api");
@@ -62,27 +61,27 @@ async function getRawDecipheredUrl(videoId) {
     let rawUrl = null;
 
     try {
-        const yt = await Innertube.create();
-        const songInfo = await yt.music.getInfo(videoId);
-        const format = songInfo.chooseFormat({ type: "audio", quality: "best" });
-        if (format) {
-            if (format.url) {
-                rawUrl = format.url;
-            } else if (typeof format.decipher === "function" && yt.session && yt.session.player) {
-                rawUrl = format.decipher(yt.session.player);
-            } else {
-                const cipherParams = new URLSearchParams(format.signature_cipher || format.cipher);
-                rawUrl = cipherParams.get("url") || null;
-            }
-        }
+        const cmd = `yt-dlp --no-update -g -f bestaudio "https://music.youtube.com/watch?v=${videoId}"`;
+        const output = execSync(cmd, { stdio: ["ignore", "pipe", "ignore"] }).toString().trim();
+        const lines = output.split(/\r?\n/).filter(l => l.startsWith("http"));
+        if (lines.length > 0) rawUrl = lines[lines.length - 1];
     } catch (e) { }
 
     if (!rawUrl) {
         try {
-            const cmd = `yt-dlp --no-update -g -f bestaudio "https://music.youtube.com/watch?v=${videoId}"`;
-            const output = execSync(cmd, { stdio: ["ignore", "pipe", "ignore"] }).toString().trim();
-            const lines = output.split(/\r?\n/).filter(l => l.startsWith("http"));
-            if (lines.length > 0) rawUrl = lines[lines.length - 1];
+            const yt = await Innertube.create();
+            const songInfo = await yt.music.getInfo(videoId);
+            const format = songInfo.chooseFormat({ type: "audio", quality: "best" });
+            if (format) {
+                if (format.url) {
+                    rawUrl = format.url;
+                } else if (typeof format.decipher === "function" && yt.session && yt.session.player) {
+                    rawUrl = format.decipher(yt.session.player);
+                } else {
+                    const cipherParams = new URLSearchParams(format.signature_cipher || format.cipher);
+                    rawUrl = cipherParams.get("url") || null;
+                }
+            }
         } catch (e) { }
     }
 
@@ -549,7 +548,7 @@ async function fetchSearchResults(query, page = 1, limit = 20, ytmusic, baseUrl 
 }
 
 // -----------------------------------------------------------------------------
-// FULL HYBRID REST API SERVER & STREAM PROXY (TERMUX & ANDROID ULTRA STABLE)
+// FULL HYBRID REST API SERVER & STREAM PROXY (WHATWG URL STRIKT & TERMUX FRIENDLY)
 // -----------------------------------------------------------------------------
 function startRestApiServer(port) {
     const serverPort = port || PROXY_PORT;
@@ -584,60 +583,17 @@ function startRestApiServer(port) {
         const host = req.headers.host || `localhost:${serverPort}`;
         const currentBaseUrl = `http://${host}`;
 
-        const parsedUrl = url.parse(req.url, true);
+        // Menggunakan WHATWG URL API Standar Modern (Menghilangkan Deprecation Warning Node.js)
+        const parsedUrl = new URL(req.url, currentBaseUrl);
         const pathname = parsedUrl.pathname;
-        const query = parsedUrl.query;
+        const query = Object.fromEntries(parsedUrl.searchParams);
 
         // 1. ENDPOINT STREAM AUDIO ULTRA STABLE: /stream/:videoId
         const streamMatch = pathname.match(/\/stream\/([a-zA-Z0-9_-]+)/);
         if (streamMatch) {
             const videoId = streamMatch[1];
             
-            // Opsi 1: Direct Fetch dari Raw Deciphered Stream URL
-            try {
-                const rawUrl = await getRawDecipheredUrl(videoId);
-                if (rawUrl) {
-                    const fetchHeaders = {
-                        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-                        "Referer": "https://music.youtube.com/"
-                    };
-                    if (req.headers.range) {
-                        fetchHeaders["Range"] = req.headers.range;
-                    }
-
-                    const response = await fetch(rawUrl, { headers: fetchHeaders });
-
-                    if (response.status === 200 || response.status === 206) {
-                        const resHeaders = {
-                            "Content-Type": response.headers.get("content-type") || "audio/webm",
-                            "Accept-Ranges": "bytes",
-                            "Cache-Control": "no-cache"
-                        };
-
-                        if (response.headers.get("content-length")) {
-                            resHeaders["Content-Length"] = response.headers.get("content-length");
-                        }
-                        if (response.headers.get("content-range")) {
-                            resHeaders["Content-Range"] = response.headers.get("content-range");
-                        }
-
-                        res.writeHead(response.status, resHeaders);
-
-                        if (response.body) {
-                            const reader = response.body.getReader();
-                            while (true) {
-                                const { done, value } = await reader.read();
-                                if (done) break;
-                                res.write(value);
-                            }
-                        }
-                        res.end();
-                        return;
-                    }
-                }
-            } catch (err) {}
-
-            // Opsi 2: Fallback Stdout Streaming via yt-dlp jika direct fetch tidak merespon 200/206
+            let isPiped = false;
             try {
                 const ytdlpProc = spawn("yt-dlp", [
                     "--no-update",
@@ -646,10 +602,9 @@ function startRestApiServer(port) {
                     `https://music.youtube.com/watch?v=${videoId}`
                 ]);
 
-                let isHeaderSent = false;
                 ytdlpProc.stdout.on("data", (chunk) => {
-                    if (!isHeaderSent) {
-                        isHeaderSent = true;
+                    if (!isPiped) {
+                        isPiped = true;
                         res.writeHead(200, {
                             "Content-Type": "audio/webm",
                             "Accept-Ranges": "bytes",
@@ -664,19 +619,57 @@ function startRestApiServer(port) {
                 });
 
                 ytdlpProc.on("error", () => {
-                    if (!res.headersSent) {
-                        res.writeHead(500, { "Content-Type": "application/json" });
-                        res.end(JSON.stringify({ error: "Gagal memutar audio stream." }));
-                    }
+                    if (!isPiped) fallbackFetchStream();
                 });
 
-                return;
-            } catch (e) { }
+                setTimeout(() => {
+                    if (!isPiped) {
+                        try { ytdlpProc.kill(); } catch(e){}
+                        fallbackFetchStream();
+                    }
+                }, 4000);
 
-            if (!res.headersSent) {
-                res.writeHead(500, { "Content-Type": "application/json" });
-                res.end(JSON.stringify({ error: "Gagal memutar audio stream." }));
+            } catch (e) {
+                fallbackFetchStream();
             }
+
+            async function fallbackFetchStream() {
+                if (res.headersSent) return;
+                try {
+                    const rawUrl = await getRawDecipheredUrl(videoId);
+                    if (rawUrl) {
+                        const response = await fetch(rawUrl, {
+                            headers: {
+                                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                                "Referer": "https://music.youtube.com/"
+                            }
+                        });
+
+                        const status = response.status === 403 ? 200 : response.status;
+                        res.writeHead(status, {
+                            "Content-Type": response.headers.get("content-type") || "audio/webm",
+                            "Accept-Ranges": "bytes"
+                        });
+
+                        if (response.body) {
+                            const reader = response.body.getReader();
+                            while (true) {
+                                const { done, value } = await reader.read();
+                                if (done) break;
+                                res.write(value);
+                            }
+                        }
+                        res.end();
+                        return;
+                    }
+                } catch (err) {}
+
+                if (!res.headersSent) {
+                    res.writeHead(500, { "Content-Type": "application/json" });
+                    res.end(JSON.stringify({ error: "Gagal memutar audio stream. Pastikan yt-dlp terpasang di Termux (pkg install python ffmpeg -y && pip install yt-dlp)." }));
+                }
+            }
+
             return;
         }
 
