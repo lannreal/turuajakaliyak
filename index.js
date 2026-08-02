@@ -8,6 +8,18 @@ const { Innertube } = require("youtubei.js");
 
 let PROXY_PORT = 3000;
 let ALIAS_BASE_URL = `http://localhost:${PROXY_PORT}`;
+const SERVER_START_TIME = Date.now();
+
+/**
+ * Helper Uptime Server
+ */
+function getFormattedUptime() {
+    const totalSeconds = Math.floor((Date.now() - SERVER_START_TIME) / 1000);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    return `${hours}h ${minutes}m ${seconds}s`;
+}
 
 /**
  * Cek apakah Port Proxy/Server sedang aktif
@@ -548,7 +560,7 @@ async function fetchSearchResults(query, page = 1, limit = 20, ytmusic, baseUrl 
 }
 
 // -----------------------------------------------------------------------------
-// FULL HYBRID REST API SERVER & STREAM PROXY (WHATWG URL STRIKT & TERMUX FRIENDLY)
+// FULL HYBRID REST API SERVER & STREAM PROXY (ELEGANT ENTERPRISE API INDEX)
 // -----------------------------------------------------------------------------
 function startRestApiServer(port) {
     const serverPort = port || PROXY_PORT;
@@ -583,7 +595,6 @@ function startRestApiServer(port) {
         const host = req.headers.host || `localhost:${serverPort}`;
         const currentBaseUrl = `http://${host}`;
 
-        // Menggunakan WHATWG URL API Standar Modern (Menghilangkan Deprecation Warning Node.js)
         const parsedUrl = new URL(req.url, currentBaseUrl);
         const pathname = parsedUrl.pathname;
         const query = Object.fromEntries(parsedUrl.searchParams);
@@ -736,22 +747,92 @@ function startRestApiServer(port) {
                 return sendJson(200, result);
             }
 
-            // 9. ROOT DOCUMENTATION & STATUS
+            // 9. ROOT DOCUMENTATION & STATUS (ELEGANT ENTERPRISE API INDEX)
             if (pathname === "/" || pathname === "/api") {
                 return sendJson(200, {
                     status: "success",
-                    server: "YouTube Music 2-in-1 Hybrid REST API & CLI",
-                    version: "1.0.0",
-                    port: serverPort,
+                    message: "YouTube Music Hybrid REST API Service is Operational",
+                    server: {
+                        name: "YouTube Music High-Performance REST API & CLI Engine",
+                        version: "1.0.0",
+                        environment: process.env.NODE_ENV || "production",
+                        status: "online",
+                        port: serverPort,
+                        uptime: getFormattedUptime(),
+                        timestamp: new Date().toISOString(),
+                        documentation: "https://github.com/lannreal/turuajakaliyak"
+                    },
+                    features: [
+                        "Zero-Redirect Audio Stream Proxy",
+                        "Dual Lyrics Engine (Official YTM + Synced Timestamp LRCLIB)",
+                        "Comprehensive Search & Full Exploration (Home/Trending)",
+                        "Universal CORS Enabled for Cross-Platform Integration"
+                    ],
                     endpoints: [
-                        { method: "GET", path: "/api/search?q=Sheila+on+7&page=1", description: "Pencarian lagu/artis/album" },
-                        { method: "GET", path: "/api/song/k1BfsO0mxWQ", description: "Detail lagu, audio specs, lirik & related" },
-                        { method: "GET", path: "/api/artist/UCoy8sTKrImqfSq6TYOSW81A", description: "Profil artis & top songs" },
-                        { method: "GET", path: "/api/album/MPREb_N8YZSqmQiv4", description: "Tracklist album" },
-                        { method: "GET", path: "/api/playlist/PL3LUUT1_qZN5G6hOlPm64aCe6A3yIwZKh", description: "Tracklist playlist" },
-                        { method: "GET", path: "/api/home?page=1", description: "Rekomendasi beranda" },
-                        { method: "GET", path: "/api/trending?page=1", description: "Top charts trending" },
-                        { method: "GET", path: "/stream/:videoId", description: "Audio stream direct proxy" }
+                        {
+                            category: "Core Music API",
+                            name: "Song Detail & Lyrics",
+                            method: "GET",
+                            path: "/api/song/:videoId",
+                            exampleUrl: `${currentBaseUrl}/api/song/k1BfsO0mxWQ`,
+                            description: "Mengambil detail lagu lengkap, audio specs, lirik ganda (Resmi & Sync Karaoke), dan rekomendasi lagu terkait."
+                        },
+                        {
+                            category: "Core Music API",
+                            name: "Artist Profile",
+                            method: "GET",
+                            path: "/api/artist/:artistId",
+                            exampleUrl: `${currentBaseUrl}/api/artist/UCoy8sTKrImqfSq6TYOSW81A`,
+                            description: "Mengambil profil artis, foto sampul HD, 10 lagu terpopuler, dan daftar album."
+                        },
+                        {
+                            category: "Core Music API",
+                            name: "Album Tracklist",
+                            method: "GET",
+                            path: "/api/album/:albumId",
+                            exampleUrl: `${currentBaseUrl}/api/album/MPREb_N8YZSqmQiv4`,
+                            description: "Mengambil daftar trek album lengkap beserta urutan lagu dan direct stream URL."
+                        },
+                        {
+                            category: "Core Music API",
+                            name: "Playlist Tracklist",
+                            method: "GET",
+                            path: "/api/playlist/:playlistId",
+                            exampleUrl: `${currentBaseUrl}/api/playlist/PL3LUUT1_qZN5G6hOlPm64aCe6A3yIwZKh`,
+                            description: "Mengambil detail playlist publik dan seluruh trek lagu di dalamnya."
+                        },
+                        {
+                            category: "Discovery API",
+                            name: "Search Music",
+                            method: "GET",
+                            path: "/api/search?q=<query>&page=1",
+                            exampleUrl: `${currentBaseUrl}/api/search?q=Sheila+on+7&page=1`,
+                            description: "Pencarian cerdas lagu, artis, atau album dengan dukungan paginasi."
+                        },
+                        {
+                            category: "Discovery API",
+                            name: "Home Recommendations",
+                            method: "GET",
+                            path: "/api/home?page=1",
+                            exampleUrl: `${currentBaseUrl}/api/home?page=1`,
+                            description: "Mengambil beranda rekomendasi musik terkini dari YouTube Music."
+                        },
+                        {
+                            category: "Discovery API",
+                            name: "Trending Charts",
+                            method: "GET",
+                            path: "/api/trending?page=1",
+                            exampleUrl: `${currentBaseUrl}/api/trending?page=1`,
+                            description: "Mengambil daftar lagu tangga teratas (Top Charts) yang sedang hangat."
+                        },
+                        {
+                            category: "Streaming Proxy API",
+                            name: "Direct Audio Stream Proxy",
+                            method: "GET",
+                            path: "/stream/:videoId",
+                            exampleUrl: `${currentBaseUrl}/stream/k1BfsO0mxWQ`,
+                            description: "Zero-redirect audio streaming proxy. Menyalurkan data suara mentah secara privat tanpa menyamarkan IP pengguna."
+                        }
                     ]
                 });
             }

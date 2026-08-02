@@ -193,6 +193,102 @@ GET http://localhost:3000/
 ## 📄 Contoh Respon JSON Seluruh Endpoints
 
 <details>
+<summary>🔍 <b>0. GET / (Index Status API & Live Documentation)</b></summary>
+
+<br />
+
+```json
+{
+  "status": "success",
+  "message": "YouTube Music Hybrid REST API Service is Operational",
+  "server": {
+    "name": "YouTube Music High-Performance REST API & CLI Engine",
+    "version": "1.0.0",
+    "environment": "production",
+    "status": "online",
+    "port": 3000,
+    "uptime": "0h 14m 22s",
+    "timestamp": "2026-08-02T07:34:15.000Z",
+    "documentation": "https://github.com/lannreal/turuajakaliyak"
+  },
+  "features": [
+    "Zero-Redirect Audio Stream Proxy",
+    "Dual Lyrics Engine (Official YTM + Synced Timestamp LRCLIB)",
+    "Comprehensive Search & Full Exploration (Home/Trending)",
+    "Universal CORS Enabled for Cross-Platform Integration"
+  ],
+  "endpoints": [
+    {
+      "category": "Core Music API",
+      "name": "Song Detail & Lyrics",
+      "method": "GET",
+      "path": "/api/song/:videoId",
+      "exampleUrl": "http://localhost:3000/api/song/k1BfsO0mxWQ",
+      "description": "Mengambil detail lagu lengkap, audio specs, lirik ganda (Resmi & Sync Karaoke), dan rekomendasi lagu terkait."
+    },
+    {
+      "category": "Core Music API",
+      "name": "Artist Profile",
+      "method": "GET",
+      "path": "/api/artist/:artistId",
+      "exampleUrl": "http://localhost:3000/api/artist/UCoy8sTKrImqfSq6TYOSW81A",
+      "description": "Mengambil profil artis, foto sampul HD, 10 lagu terpopuler, dan daftar album."
+    },
+    {
+      "category": "Core Music API",
+      "name": "Album Tracklist",
+      "method": "GET",
+      "path": "/api/album/:albumId",
+      "exampleUrl": "http://localhost:3000/api/album/MPREb_N8YZSqmQiv4",
+      "description": "Mengambil daftar trek album lengkap beserta urutan lagu dan direct stream URL."
+    },
+    {
+      "category": "Core Music API",
+      "name": "Playlist Tracklist",
+      "method": "GET",
+      "path": "/api/playlist/:playlistId",
+      "exampleUrl": "http://localhost:3000/api/playlist/PL3LUUT1_qZN5G6hOlPm64aCe6A3yIwZKh",
+      "description": "Mengambil detail playlist publik dan seluruh trek lagu di dalamnya."
+    },
+    {
+      "category": "Discovery API",
+      "name": "Search Music",
+      "method": "GET",
+      "path": "/api/search?q=<query>&page=1",
+      "exampleUrl": "http://localhost:3000/api/search?q=Sheila+on+7&page=1",
+      "description": "Pencarian cerdas lagu, artis, atau album dengan dukungan paginasi."
+    },
+    {
+      "category": "Discovery API",
+      "name": "Home Recommendations",
+      "method": "GET",
+      "path": "/api/home?page=1",
+      "exampleUrl": "http://localhost:3000/api/home?page=1",
+      "description": "Mengambil beranda rekomendasi musik terkini dari YouTube Music."
+    },
+    {
+      "category": "Discovery API",
+      "name": "Trending Charts",
+      "method": "GET",
+      "path": "/api/trending?page=1",
+      "exampleUrl": "http://localhost:3000/api/trending?page=1",
+      "description": "Mengambil daftar lagu tangga teratas (Top Charts) yang sedang hangat."
+    },
+    {
+      "category": "Streaming Proxy API",
+      "name": "Direct Audio Stream Proxy",
+      "method": "GET",
+      "path": "/stream/:videoId",
+      "exampleUrl": "http://localhost:3000/stream/k1BfsO0mxWQ",
+      "description": "Zero-redirect audio streaming proxy. Menyalurkan data suara mentah secara privat tanpa menyamarkan IP pengguna."
+    }
+  ]
+}
+```
+
+</details>
+
+<details>
 <summary>🔍 <b>1. GET /api/search?q=Sheila+on+7&page=1 (Hasil Pencarian)</b></summary>
 
 <br />
