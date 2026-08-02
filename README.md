@@ -7,7 +7,7 @@
 
   <!-- ANIMATED TYPING SVG BANNER -->
   <a href="https://git.io/typing-svg">
-    <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=700&size=26&pause=1000&color=E60000&center=true&vCenter=true&random=false&width=750&height=50&lines=%F0%9F%8E%B5+YouTube+Music+Scraper+%26+REST+API;%F0%9F%8E%A7+Zero-Redirect+Direct+Audio+Proxy;%F0%9F%93%9C+Dual+Lyrics%3A+Official+%2B+Synced+Karaoke;%E2%9A%A1+2-in-1+Hybrid+Engine+(REST+API+%2B+CLI)" alt="Typing SVG" />
+    <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=700&size=26&pause=1000&color=E60000&center=true&vCenter=true&random=false&width=750&height=50&lines=%F0%9F%8E%B5+YouTube+Music+Scraper+%26+REST+API;%F0%9F%8E%A7+Zero-Redirect+Direct+Audio+Proxy;%F0%9F%93%9C+Dual+Lyrics%3A+Official+%2B+Synced+Karaoke;%F0%9F%93%B1+Termux+(Android)+%2B+Windows+Supported;%E2%9A%A1+2-in-1+Hybrid+Engine+(REST+API+%2B+CLI)" alt="Typing SVG" />
   </a>
 
   <br />
@@ -17,12 +17,12 @@
     <a href="#"><img src="https://img.shields.io/badge/Node.js-v18%2B-green.svg?style=for-the-badge&logo=nodedotjs&logoColor=white" alt="NodeJS" /></a>
     <a href="#"><img src="https://img.shields.io/badge/Platform-YouTube%20Music-red.svg?style=for-the-badge&logo=youtubemusic&logoColor=white" alt="YouTube Music" /></a>
     <a href="#"><img src="https://img.shields.io/badge/Lyrics-LyricFind%20%7C%20LRCLIB-violet.svg?style=for-the-badge&logo=genius&logoColor=white" alt="Lyrics Engine" /></a>
-    <a href="#"><img src="https://img.shields.io/badge/Proxy-Zero%20Redirect-orange.svg?style=for-the-badge&logo=fastapi&logoColor=white" alt="Proxy" /></a>
+    <a href="#"><img src="https://img.shields.io/badge/OS-Termux%20%7C%20Windows%20%7C%20Linux-orange.svg?style=for-the-badge&logo=android&logoColor=white" alt="OS Support" /></a>
     <a href="#"><img src="https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge" alt="License" /></a>
   </p>
 
   <p align="center">
-    <b>Solusi Scraper & REST API Server Audio Streaming Modern, Cepat, dan Privat Berbasis Node.js</b>
+    <b>Solusi Scraper & REST API Server Audio Streaming Modern, Cepat, dan Privat Berbasis Node.js — Kompatibel Penuh untuk Termux (Android) & PC</b>
   </p>
 
   <img src="https://raw.githubusercontent.com/andrei-pavel/andrei-pavel/main/assets/welcomes.gif" width="100%" height="8px" alt="animated divider" />
@@ -36,6 +36,7 @@
 | Fitur | Deskripsi |
 | :--- | :--- |
 | ⚡ **2-in-1 Hybrid Mode** | Berjalan fleksibel sebagai **REST API Web Server** (Port 3000) **DAN** sebagai **CLI Tool** langsung di terminal. |
+| 📱 **Full Termux (Android) Support** | Kompatibel 100% di Termux Android (`0.0.0.0` binding) dengan sistem dekripsi audio otomatis. |
 | 🎧 **Zero-Redirect Proxy** | Server proxy stream lokal (`/stream/:videoId`) menyalurkan audio mentah tanpa redirect & **100% menyamarkan IP**. |
 | 📜 **Dual Lyrics Engine** | **Official YTM Lyrics** (*LyricFind / Musixmatch*) + **Synced Karaoke Lyrics** ber-timestamp milidetik (*LRCLIB*). |
 | 🔍 **Full Exploration** | Pencarian Kata Kunci (*Search*), Beranda Rekomendasi (*Home*), & Top Charts (*Trending*). |
@@ -46,6 +47,7 @@
 
 ## ⚡ Quick Start & Instalasi
 
+### 💻 1. Instalasi di Windows / Linux / macOS:
 ```bash
 # 1. Clone repository
 git clone https://github.com/lannreal/turuajakaliyak.git
@@ -53,10 +55,28 @@ git clone https://github.com/lannreal/turuajakaliyak.git
 # 2. Masuk ke folder proyek
 cd turuajakaliyak
 
-# 3. Install dependensi
+# 3. Install dependensi Node.js
 npm install
 
 # 4. Jalankan Server REST API Interaktif (Port 3000)
+node index.js server 3000
+```
+
+---
+
+### 📱 2. Panduan Khusus Termux (Android):
+Untuk memastikan aliran audio stream terputar lancar 100% tanpa error 403 di Termux HP Android, install paket pendukung `yt-dlp` dan `ffmpeg` terlebih dahulu:
+
+```bash
+# 1. Update paket & install yt-dlp + ffmpeg di Termux
+pkg install python ffmpeg -y && pip install yt-dlp
+
+# 2. Clone repository & install dependensi
+git clone https://github.com/lannreal/turuajakaliyak.git
+cd turuajakaliyak
+npm install
+
+# 3. Jalankan Server REST API di Termux
 node index.js server 3000
 ```
 
@@ -67,7 +87,7 @@ node index.js server 3000
 Jalankan server REST API dengan `node index.js server 3000`, lalu tembak endpoint berikut dari Browser, Postman, atau Frontend App Anda:
 
 ```http
-GET http://127.0.0.1:3000/
+GET http://localhost:3000/
 ```
 
 ### 📋 Daftar Endpoints
@@ -110,7 +130,7 @@ GET http://127.0.0.1:3000/
       "duration": "4:49",
       "coverArt": "https://yt3.googleusercontent.com/h52YQ8oAiGCiZFp5W1RGaj8GQMde1hNmYV7_ad3XgWcygvz7riguymmuvMj2yUoP1qhU2C3zoDJu72w=w120-h120-l90-rj",
       "webUrl": "https://music.youtube.com/watch?v=k1BfsO0mxWQ",
-      "streamUrl": "http://127.0.0.1:3000/stream/k1BfsO0mxWQ"
+      "streamUrl": "http://localhost:3000/stream/k1BfsO0mxWQ"
     },
     {
       "type": "album",
@@ -152,7 +172,7 @@ GET http://127.0.0.1:3000/
     "views": 55408789,
     "coverArt": "https://yt3.googleusercontent.com/h52YQ8oAiGCiZFp5W1RGaj8GQMde1hNmYV7_ad3XgWcygvz7riguymmuvMj2yUoP1qhU2C3zoDJu72w=w544-h544-l90-rj",
     "webUrl": "https://music.youtube.com/watch?v=k1BfsO0mxWQ",
-    "streamUrl": "http://127.0.0.1:3000/stream/k1BfsO0mxWQ",
+    "streamUrl": "http://localhost:3000/stream/k1BfsO0mxWQ",
     "audioQuality": {
       "container": "audio/mp4",
       "codec": "mp4a.40.2",
@@ -191,7 +211,7 @@ GET http://127.0.0.1:3000/
         "artist": "Sheila On 7",
         "coverArt": "https://yt3.googleusercontent.com/YXzLBS3PLlIQy70cJtRZLjEQpdB-un0l72PfFg_HFftVaWGTsxDr5iTwCWayyHF_3R8GGLoi4ZadJiVOMg=w120-h120-l90-rj",
         "webUrl": "https://music.youtube.com/watch?v=hv00T3jdIhc",
-        "streamUrl": "http://127.0.0.1:3000/stream/hv00T3jdIhc"
+        "streamUrl": "http://localhost:3000/stream/hv00T3jdIhc"
       }
     ]
   }
@@ -224,7 +244,7 @@ GET http://127.0.0.1:3000/
         "duration": "4:49",
         "coverArt": "https://yt3.googleusercontent.com/h52YQ8oAiGCiZFp5W1RGaj8GQMde1hNmYV7_ad3XgWcygvz7riguymmuvMj2yUoP1qhU2C3zoDJu72w=w120-h120-l90-rj",
         "webUrl": "https://music.youtube.com/watch?v=k1BfsO0mxWQ",
-        "streamUrl": "http://127.0.0.1:3000/stream/k1BfsO0mxWQ"
+        "streamUrl": "http://localhost:3000/stream/k1BfsO0mxWQ"
       }
     ],
     "albums": [
@@ -268,7 +288,7 @@ GET http://127.0.0.1:3000/
         "artist": "Sheila On 7",
         "duration": "4:27",
         "webUrl": "https://music.youtube.com/watch?v=xKU58YkAcLw",
-        "streamUrl": "http://127.0.0.1:3000/stream/xKU58YkAcLw"
+        "streamUrl": "http://localhost:3000/stream/xKU58YkAcLw"
       },
       {
         "trackNumber": 2,
@@ -277,7 +297,7 @@ GET http://127.0.0.1:3000/
         "artist": "Sheila On 7",
         "duration": "4:02",
         "webUrl": "https://music.youtube.com/watch?v=nSPj50gQ_m4",
-        "streamUrl": "http://127.0.0.1:3000/stream/nSPj50gQ_m4"
+        "streamUrl": "http://localhost:3000/stream/nSPj50gQ_m4"
       }
     ]
   }
@@ -312,7 +332,7 @@ GET http://127.0.0.1:3000/
         "duration": "4:49",
         "coverArt": "https://yt3.googleusercontent.com/h52YQ8oAiGCiZFp5W1RGaj8GQMde1hNmYV7_ad3XgWcygvz7riguymmuvMj2yUoP1qhU2C3zoDJu72w=w120-h120-l90-rj",
         "webUrl": "https://music.youtube.com/watch?v=k1BfsO0mxWQ",
-        "streamUrl": "http://127.0.0.1:3000/stream/k1BfsO0mxWQ"
+        "streamUrl": "http://localhost:3000/stream/k1BfsO0mxWQ"
       }
     ]
   }
@@ -346,7 +366,7 @@ GET http://127.0.0.1:3000/
           "duration": "4:49",
           "coverArt": "https://yt3.googleusercontent.com/...",
           "webUrl": "https://music.youtube.com/watch?v=k1BfsO0mxWQ",
-          "streamUrl": "http://127.0.0.1:3000/stream/k1BfsO0mxWQ"
+          "streamUrl": "http://localhost:3000/stream/k1BfsO0mxWQ"
         }
       ]
     }
@@ -376,7 +396,7 @@ GET http://127.0.0.1:3000/
       "artist": "SETH.",
       "coverArt": "https://i.ytimg.com/vi/0S0gYCRWeSI/hqdefault.jpg",
       "webUrl": "https://music.youtube.com/watch?v=0S0gYCRWeSI",
-      "streamUrl": "http://127.0.0.1:3000/stream/0S0gYCRWeSI"
+      "streamUrl": "http://localhost:3000/stream/0S0gYCRWeSI"
     }
   ]
 }
